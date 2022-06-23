@@ -49,7 +49,66 @@ async function run() {
   if (await performLogin() === false) return;
   if (await getInboxParameters() === false) return;
   if (await getInboxContentScript() === false) return;
-  if (processInboxAst() === false) return;
+  //getConversations();
+  await sendMessage();
+}
+
+async function sendMessage() {
+  console.log("sendMessage()\n");
+  
+  const variables = JSON.stringify({
+    'deviceId': Data.deviceId,
+    'requestId': 0,
+    'requestPayload': JSON.stringify({
+      'version_id': '5710290875672189',
+      'tasks': [
+        {
+          'label': '46',
+          'payload': JSON.stringify({
+            'thread_id': 612305952,
+            'otid': '6945771336828502081',
+            'source': 65541,
+            'send_type': 1,
+            'text': 'send message test',
+            'initiating_source': 1
+          }),
+          'queue_name': '612305952',
+          'task_id': 17,
+          'failure_count': null
+        },
+        {
+          'label': '21',
+          'payload': JSON.stringify({
+            'thread_id': 612305952,
+            'last_read_watermark_ts': 1656000932891,
+            'sync_group': 1
+          }),
+          'queue_name': '612305952',
+          'task_id': 18,
+          'failure_count': null
+        }
+      ],
+      'epoch_id': 6945771337157189816,
+      'data_trace_id': '#oLSqS1lxSdmG1azAMAGz7A'
+    }),
+    'requestType': 3 // to match type: 3 in websocket message
+  });
+
+  const options = {
+    method: 'post',
+    url: Config.host + Config.apiPath,
+    headers: {
+      'accept': '*/*',
+      'user-agent': 'www.messenger.com',
+      'content-type': 'application/x-www-form-urlencoded',
+      'cookie': `c_user=${Data.c_user}; xs=${Data.xs}`
+    },
+    data: `fb_dtsg=${Data.fb_dtsg}&doc_id=${Data.doc_id}&variables=${variables}`
+  };
+
+  const response = await axios(options)
+  .then(res => res)
+  .catch(err => console.error("Error performing send message request.\n", err));
 }
 
 class Visitor {
@@ -102,8 +161,8 @@ class Visitor {
   }
 }
 
-function processInboxAst() {
-  console.log("\nprocessInboxAst()");
+function getConversations() {
+  console.log("\ngetConversations");
 
   const visitor = new Visitor();
   visitor.visitNode(Data.inboxAst);
@@ -118,8 +177,8 @@ function processInboxAst() {
       if (node.type === 'Literal') {
         entry.push(node.value);
       } else if (node.type === 'ArrayExpression' && node.elements.length === 2) {
-        let i64val = bigInt(node.elements[0].value).shiftLeft(32).add(node.elements[1].value);
-        entry.push(i64val);
+        // Convert 32bit number pair (high + low) to 64bit
+        entry.push( bigInt(node.elements[0].value).shiftLeft(32).add(node.elements[1].value) );
       } else if (node.type === 'UnaryExpression' && node.prefix && node.operator === '-') {
         console.log("UNHANDLED TYPE:", console.log(node.argument));
       } else if (node.type === 'Identifier' && node.name === 'U') {
@@ -150,8 +209,6 @@ function processInboxAst() {
   }
 
   console.log(Conversations);
-
-  return false;
 }
 
 async function getInboxContentScript() {
