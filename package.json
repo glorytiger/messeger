@@ -1,0 +1,17 @@
+{
+  "name": "messyger",
+  "version": "1.0.0",
+  "description": "Run:\r ---\r node messyger.js <username> <password>",
+  "main": "messyger.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "acorn": "^8.7.1",
+    "axios": "^0.27.2",
+    "qs": "^6.10.5"
+  }
+}
