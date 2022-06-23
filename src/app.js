@@ -5,6 +5,9 @@ const axios = require('axios');
 const fs = require('fs');
 const qs = require('qs');
 const acorn = require('acorn');
+const bigInt = require('big-integer');
+
+let Conversations = []
 
 let Config = {
   host: 'https://www.messenger.com/',
@@ -47,89 +50,6 @@ async function run() {
   if (await getInboxParameters() === false) return;
   if (await getInboxContentScript() === false) return;
   if (processInboxAst() === false) return;
-}
-
-let count = 0;
-class oldVisitor {
-  /* Deal with nodes in an array */
-  visitNodes(nodes) { for (const node of nodes) this.visitNode(node); }
-  /* Dispatch each type of node to a function */
-  visitNode(node) {
-    if (node === null) return;
-    count++;
-    console.log(node.type);
-    switch (node.type) {
-      case 'Program': return this.visitProgram(node);
-      case 'FunctionDeclaration': return this.visitFunctionDeclaration(node);
-      case 'VariableDeclaration': return this.visitVariableDeclaration(node);
-      case 'ReturnStatement': return this.visitReturnStatement(node);
-      case 'CallExpression': return this.visitCallExpression(node);
-      case 'ArrowFunctionExpression': return this.visitArrowFunctionExpression(node)
-      case 'VariableDeclarator': return this.visitVariableDeclarator(node);
-      case 'Identifier': return this.visitIdentifier(node);
-      case 'ConditionalExpression': return this.visitConditionalExpression(node);
-      case 'Literal': return this.visitLiteral(node);
-      case 'AssignmentExpression': return this.visitAssignmentExpression(node);
-      case 'SequenceExpression': return this.visitSequenceExpression(node);
-      case 'BlockStatement': return this.visitBlockStatement(node);
-      case 'MemberExpression': return this.visitMemberExpression(node);
-      case 'ArrayExpression': return this.visitArrayExpression(node);
-      case 'BinaryExpression': return this.visitBinaryExpression(node);
-      default: console.log("***Unhandled node***\n", node);
-    }
-  }
-  /* Functions to deal with each type of node */
-  visitProgram(node) {
-    if (Array.isArray(node.body)) return this.visitNodes(node.body);
-    else return this.visitNode(node.body);
-  }
-  visitFunctionDeclaration(node) {
-    this.visitNode(node.id);
-    if (Array.isArray(node.body)) return this.visitNodes(node.body);
-    else return this.visitNode(node.body);
-  }
-  visitVariableDeclaration(node) { return this.visitNodes(node.declarations); }
-  visitReturnStatement(node) { return this.visitNode(node.argument); }
-  visitCallExpression(node) {
-    this.visitNode(node.callee);
-    return this.visitNodes(node.arguments);
-  }
-  visitArrowFunctionExpression(node) {
-    this.visitNodes(node.params);
-    return this.visitNode(node.body); // might be array
-  }
-  visitVariableDeclarator(node) {
-    this.visitNode(node.id);
-    return this.visitNode(node.init);
-  }
-  visitLiteral(node) { return node.value; }
-  visitAssignmentExpression(node) {
-    this.visitNode(node.left);
-    return this.visitNode(node.right);
-  }
-  visitIdentifier(node) { return node.name; }
-  visitConditionalExpression(node) {
-    this.visitNode(node.test);
-    this.visitNode(node.consequent);
-    return this.visitNode(node.alternate);
-  }
-  visitSequenceExpression(node) {
-    console.log("Dead end.", node.argument);
-    return this.visitNodes(node.expressions);
-  }
-  visitBlockStatement(node) {
-    if (Array.isArray(node.body)) return this.visitNodes(node.body);
-    else return this.visitNode(node.body);
-  }
-  visitMemberExpression(node) {
-    this.visitNode(node.object);
-    return this.visitNode(node.property);
-  }
-  visitArrayExpression(node) { return this.visitNodes(node.elements); }
-  visitBinaryExpression(node) {
-    this.visitNode(node.left);
-    return this.visitNode(node.right);
-  }
 }
 
 class Visitor {
@@ -197,18 +117,39 @@ function processInboxAst() {
     for (const node of func.arguments) {
       if (node.type === 'Literal') {
         entry.push(node.value);
-      }
-      if (node.type === 'ArrayExpression' && node.elements.length === 2) {
-        entry.push((node.elements[0].value << 32) + node.elements[1].value);
-      }
-      if (node.type === 'UnaryExpression' && node.prefix && node.operator === '-') {
+      } else if (node.type === 'ArrayExpression' && node.elements.length === 2) {
+        let i64val = bigInt(node.elements[0].value).shiftLeft(32).add(node.elements[1].value);
+        entry.push(i64val);
+      } else if (node.type === 'UnaryExpression' && node.prefix && node.operator === '-') {
         console.log("UNHANDLED TYPE:", console.log(node.argument));
+      } else if (node.type === 'Identifier' && node.name === 'U') {
+        if (node.name === 'U') {
+          entry.push(undefined);
+        } else {
+          console.log("UNHANDLED IDENTIFIER", node);
+        }
+      } else {
+        //console.log(node);
       }
     }
     lsDict[func.arguments[0].value] = entry;
   }
+  
+  for (const [key, value] of Object.entries(lsDict)) {
+    if (key === 'deleteThenInsertThread') {
+      const lastSentTs = bigInt(value[1]);
+      const lastReadTs = bigInt(value[2]);
+      const lastMsg = value[3];
+      const iconUrl = value[5];
+      const userId = bigInt(value[8]);
+      const lastMsgUserId = bigInt(value[18]);
+      Conversations.push({
+        userId: userId, isUnread: lastSentTs.neq(lastReadTs), lastMessage: lastMsg, lastMessageUserId: lastMsgUserId
+      });
+    }
+  }
 
-  console.log(lsDict);
+  console.log(Conversations);
 
   return false;
 }
