@@ -1,5 +1,6 @@
 // app.js
 
+require('dotenv').config({ path: '../.env' });;
 const axios = require('axios');
 const fs = require('fs');
 const qs = require('qs');
@@ -49,7 +50,7 @@ async function run() {
 }
 
 let count = 0;
-class Visitor {
+class oldVisitor {
   /* Deal with nodes in an array */
   visitNodes(nodes) { for (const node of nodes) this.visitNode(node); }
   /* Dispatch each type of node to a function */
@@ -131,12 +132,83 @@ class Visitor {
   }
 }
 
+class Visitor {
+  constructor() {
+    this.count = 0;
+    this.lsFuncs = [];
+  }
+  visitNodes(nodes) { for (const n of nodes) this.visitNode(n); }
+  visitNode(node) {
+    if (node === null || node === undefined) return;
+    this.count++;
+    //console.log(node.type);
+
+    // Append LS functions to array
+    if (node.type === 'CallExpression' &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.object.type === 'Identifier' &&
+        node.callee.object.name === 'LS' &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'sp') {
+      //console.log(node.arguments[0].value);
+      this.lsFuncs.push(node);
+    }
+
+    /*for (const prop in node) {
+      if (Object.prototype.hasOwnProperty.call(node, prop)) {
+        if (Array.isArray(node.prop)) this.visitNodes(node.prop);
+        else this.visitNode(node.prop);
+      }
+    }*/
+
+    if (Array.isArray(node.body)) { this.visitNodes(node.body); }
+    else if (node.body) { this.visitNode(node.body); }
+    if (node.id) this.visitNode(node.id);
+    if (node.declarations) this.visitNodes(node.declarations);
+    if (Array.isArray(node.arguments)) this.visitNodes(node.arguments);
+    else this.visitNode(node.argument);
+    if (node.callee) this.visitNode(node.callee);
+    if (node.params) this.visitNodes(node.params);
+    if (node.init) this.visitNode(node.init);
+    if (node.left) this.visitNode(node.left);
+    if (node.right) this.visitNode(node.right);
+    if (node.test) this.visitNode(node.test);
+    if (node.consequent) this.visitNode(node.consequent);
+    if (node.alternate) this.visitNode(node.alternate);
+    if (node.expressions) this.visitNodes(node.expressions);
+    if (node.object) this.visitNode(node.object);
+    if (node.property) this.visitNode(node.property);
+    if (node.elements) this.visitNodes(node.elements);
+  }
+}
+
 function processInboxAst() {
   console.log("\nprocessInboxAst()");
 
   const visitor = new Visitor();
   visitor.visitNode(Data.inboxAst);
-  console.log(count);
+  console.log("tree size:", visitor.count);
+
+  let lsDict = {};
+  for (const func of visitor.lsFuncs) {
+    //console.log(func);
+    //console.log(func.arguments[0].value);
+    let entry = [];
+    for (const node of func.arguments) {
+      if (node.type === 'Literal') {
+        entry.push(node.value);
+      }
+      if (node.type === 'ArrayExpression' && node.elements.length === 2) {
+        entry.push((node.elements[0].value << 32) + node.elements[1].value);
+      }
+      if (node.type === 'UnaryExpression' && node.prefix && node.operator === '-') {
+        console.log("UNHANDLED TYPE:", console.log(node.argument));
+      }
+    }
+    lsDict[func.arguments[0].value] = entry;
+  }
+
+  console.log(lsDict);
 
   return false;
 }
@@ -397,7 +469,11 @@ function parseArguments() {
     }
   }
   if (Data.username.length === 0 || Data.password.length === 0) {
-    console.log("Required parameters missing. The following must be provided: -u username and -p password.");
+    Data.username = process.env.USERNAME;
+    Data.password = process.env.PASSWORD;
+  }
+  if (Data.username.length === 0 || Data.password.length === 0) {
+    console.log("Required parameters missing. Please update the .env file or use the following parameters: -u username and -p password.");
     return false;
   }
   console.log("username:", Data.username);
