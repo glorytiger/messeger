@@ -1,13 +1,13 @@
 // app.js
 
-require('dotenv').config({ path: '../.env' });;
+require('dotenv').config({ path: '../.env' });
 const axios = require('axios');
 const fs = require('fs');
 const qs = require('qs');
 const acorn = require('acorn');
 const bigInt = require('big-integer');
 
-let Conversations = []
+let Conversations = [];
 
 let Config = {
   host: 'https://www.messenger.com/',
@@ -27,20 +27,28 @@ let Config = {
 };
 
 let Data = {
-  username: '',
-  password: '',
+  username: null,
+  password: null,
+  message: null,
+  recipientId: null,
   initialRequestId: '',
   lsd: '',
   datr: '',
   c_user: '', //login cookie
   xs: '', //login cookie
-  sb: '', //login cookie
   fb_dtsg: '',
   deviceId: '',
   version: '',
   inboxAst: null,
   rsrcScripts: []
 };
+
+function printMenu() {
+  console.log("Messyger");
+  // print conversations
+  // print 'press n for new message'
+  // print 'press n to exit'
+}
 
 async function run() {
 
@@ -49,46 +57,60 @@ async function run() {
   if (await performLogin() === false) return;
   if (await getInboxParameters() === false) return;
   if (await getInboxContentScript() === false) return;
-  //getConversations();
-  await sendMessage();
+  getConversations();
+
+  if (Data.message && Data.recipientId) {
+    await sendMessage();
+  }
+}
+
+function getName() {
+
+  
 }
 
 async function sendMessage() {
   console.log("sendMessage()\n");
-  
+  const timestamp = Date.now();
+  const epoch = timestamp << 22;
+  const otid = epoch + 0; // TODO replace with randomInt(0, 2**22)
+  console.log("timestamp:", timestamp);
+  console.log("epoch:", epoch);
+  console.log("otid:", otid);  
+
   const variables = JSON.stringify({
     'deviceId': Data.deviceId,
     'requestId': 0,
     'requestPayload': JSON.stringify({
-      'version_id': '5710290875672189',
+      'version_id': Data.version, // was '5710290875672189'
       'tasks': [
         {
-          'label': '46',
+          'label': '46', // id for 'send message'
           'payload': JSON.stringify({
-            'thread_id': 612305952,
-            'otid': '6945771336828502081',
-            'source': 65541,
+            'thread_id': Data.recipientId.toString(), // was 612305952
+            'otid': otid.toString(), // was '6945771336828502081'
+            'source': 0, // was 65541
             'send_type': 1,
             'text': 'send message test',
             'initiating_source': 1
           }),
-          'queue_name': '612305952',
-          'task_id': 17,
+          'queue_name': Data.recipientId.toString(), // was '612305952',
+          'task_id': 0, // was 17
           'failure_count': null
         },
         {
-          'label': '21',
+          'label': '21', // id for 'update last read indicator'
           'payload': JSON.stringify({
-            'thread_id': 612305952,
-            'last_read_watermark_ts': 1656000932891,
+            'thread_id': Data.recipientId.toString(), // was 612305952
+            'last_read_watermark_ts': timestamp,
             'sync_group': 1
           }),
-          'queue_name': '612305952',
-          'task_id': 18,
+          'queue_name': Data.recipientId.toString(), // was '612305952'
+          'task_id': 1, // was 18
           'failure_count': null
         }
       ],
-      'epoch_id': 6945771337157189816,
+      'epoch_id': epoch, // was 6945771337157189816
       'data_trace_id': '#oLSqS1lxSdmG1azAMAGz7A'
     }),
     'requestType': 3 // to match type: 3 in websocket message
@@ -109,12 +131,14 @@ async function sendMessage() {
   const response = await axios(options)
   .then(res => res)
   .catch(err => console.error("Error performing send message request.\n", err));
+
+  console.log("RESPONSE\n", response);
 }
 
 class Visitor {
   constructor() {
     this.count = 0;
-    this.lsFuncs = [];
+    this.lsFuncsRaw = [];
   }
   visitNodes(nodes) { for (const n of nodes) this.visitNode(n); }
   visitNode(node) {
@@ -130,7 +154,7 @@ class Visitor {
         node.callee.property.type === 'Identifier' &&
         node.callee.property.name === 'sp') {
       //console.log(node.arguments[0].value);
-      this.lsFuncs.push(node);
+      this.lsFuncsRaw.push(node);
     }
 
     /*for (const prop in node) {
@@ -168,8 +192,8 @@ function getConversations() {
   visitor.visitNode(Data.inboxAst);
   console.log("tree size:", visitor.count);
 
-  let lsDict = {};
-  for (const func of visitor.lsFuncs) {
+  let lsFuncValues = [];
+  for (const func of visitor.lsFuncsRaw) {
     //console.log(func);
     //console.log(func.arguments[0].value);
     let entry = [];
@@ -191,23 +215,41 @@ function getConversations() {
         //console.log(node);
       }
     }
-    lsDict[func.arguments[0].value] = entry;
+    lsFuncValues.push(entry);
+    //if (func.arguments[0].value === 'verifyContactRowExists')
+      //console.log(entry);
   }
   
-  for (const [key, value] of Object.entries(lsDict)) {
-    if (key === 'deleteThenInsertThread') {
+  for (const value of lsFuncValues) {
+    if (value[0] === 'deleteThenInsertThread') {
       const lastSentTs = bigInt(value[1]);
       const lastReadTs = bigInt(value[2]);
       const lastMsg = value[3];
       const iconUrl = value[5];
       const userId = bigInt(value[8]);
+      const userName = '';
       const lastMsgUserId = bigInt(value[18]);
+      const lastMsgUserName = '';
       Conversations.push({
-        userId: userId, isUnread: lastSentTs.neq(lastReadTs), lastMessage: lastMsg, lastMessageUserId: lastMsgUserId
+        userId: userId, userName: userName, isUnread: lastSentTs.neq(lastReadTs), lastMessage: lastMsg, lastMsgUserId: lastMsgUserId, lastMsgUserName: lastMsgUserName
       });
     }
   }
-
+  for (const value of lsFuncValues) {
+    if (value[0] === 'verifyContactRowExists') {
+      const id = value[1];
+      const name = value[4];
+      for (const entry of Conversations) {
+        if (entry.userId.eq(id) === true) {
+          entry.userName = name;
+        }
+        if (entry.lastMsgUserId.eq(id)) {
+          entry.lastMsgUserName = name;
+        }
+      }
+    }
+  }
+  
   console.log(Conversations);
 }
 
@@ -287,7 +329,7 @@ async function getInboxParameters() {
       scripts.push(script);
     }
     Data.rsrcScripts = scripts;
-    writeToFile(Config.rsrcScriptsFileName, JSON.stringify(scripts));
+    writeCacheFile(Config.rsrcScriptsFileName, JSON.stringify(scripts));
     console.log("rsrc scripts:", Data.rsrcScripts.length);
   } else {
     Data.rsrcScripts = JSON.parse(await readCacheFile(Config.rsrcScriptsFileName));
@@ -344,10 +386,12 @@ async function performLogin() {
     response = await axios(config)
     .then(res => res)
     .catch(err => err.response); 
+    
     if (response.status) {
       console.log("response status:", response.status);
     }
     if (response.status && response.status === 302) {
+      console.log(response.headers);
       // Ignore everything except headers to avoid circular structure error when stringifying
       writeCacheFile(Config.loginResponseFileName, JSON.stringify({ headers: response.headers }));
     } else {
@@ -358,20 +402,20 @@ async function performLogin() {
     }
   }
   else {
+    // This file is empty, must be refetched
     response = JSON.parse(await readCacheFile(Config.loginResponseFileName));
   }
   if (response.length === 0) return false;
   
   // Extract cookies
-  let regexp = /([^=]+=)([^;]+)/;
-  Data.sb = response.headers['set-cookie'][0].match(regexp)[2];
-  Data.c_user = response.headers['set-cookie'][1].match(regexp)[2];
-  Data.xs = response.headers['set-cookie'][2].match(regexp)[2];
-  console.log("sb:", Data.sb);
+  let regexp = /c_user=([^;]+)/;
+  Data.c_user = response.headers['set-cookie'][0].match(regexp)[1];
+  regexp = /xs=([^;]+)/;
+  Data.xs = response.headers['set-cookie'][1].match(regexp)[1];
   console.log("c_user:", Data.c_user);
   console.log("xs:", Data.xs);
 
-  return (Data.sb.length > 0 && Data.c_user.length > 0 && Data.xs.length > 0);
+  return (Data.c_user.length > 0 && Data.xs.length > 0);
 }
 
 async function parseLoginPage(data) {
@@ -382,7 +426,11 @@ async function parseLoginPage(data) {
   if (Config.doRefetchLoginPage === true) {
     body = await axios.get(Config.host).then(res => {
       console.log("response status:", res.status);
-      writeCacheFile(Config.loginPageFileName, res.data);
+      if (res.data.length > 0) {
+        writeCacheFile(Config.loginPageFileName, res.data);
+      } else {
+        console.log("response data length:", res.data);
+      }
       return res.data
     });
   } else {
@@ -394,17 +442,17 @@ async function parseLoginPage(data) {
   let pattern = /name="initial_request_id" value="(?<id>\w+)"/;
   let result = body.match(pattern).groups;
   Data.initialRequestId = result.id;
-  console.log("initial_request_id: ", Data.initialRequestId);
+  console.log("initial_request_id:", Data.initialRequestId);
 
   pattern = /name="lsd" value="(?<lsd>\w+)/;
   result = body.match(pattern).groups;
   Data.lsd = result.lsd;
-  console.log("lsd: ", Data.lsd);
+  console.log("lsd:", Data.lsd);
 
   pattern = /"_js_datr","(?<datr>[^"]+)"/;
   result = body.match(pattern).groups;
   Data.datr = result.datr;
-  console.log("_js_datr: ", Data.datr);
+  console.log("_js_datr:", Data.datr);
 
   return (Data.initialRequestId.length > 0 && Data.lsd.length > 0 && Data.datr.length > 0);
 }
@@ -419,9 +467,9 @@ async function readCacheFile(name) {
   }
 }
 
-function writeCacheFile(name, content) {
+async function writeCacheFile(name, content) {
   const path = `${Config.cachePath}\\${name}`;
-  fs.writeFile(path, content, err => {
+  fs.writeFileSync(path, content, err => {
     if (err) {
       console.error("Unable to write cache file "+path+"\n", err);
     }
@@ -438,6 +486,12 @@ function parseArguments() {
         break;
       case '-p':
         Data.password = process.argv[++i];
+        break;
+      case '-m':
+        Data.message = process.argv[++i];
+        break;
+      case '-r':
+        Data.recipientId = bigInt(process.argv[++i].toString());
         break;
       case '-rl':
         Config.doRefetchLoginPage = true;
@@ -458,6 +512,8 @@ function parseArguments() {
         console.log(`Usage: node app.js -<flag> <value>`);
         console.log("-u username/email (required)");
         console.log("-p password (required)");
+        console.log("-m message");
+        console.log("-r recipientId");
         console.log("-rl Refetch login page from web instead of using cached data (default: false)");
         console.log("-rr Refetch login response from web instead of using cached data (default: false)");
         console.log("-rh Refetch home page from web instead of using cached data (default: false)");
@@ -466,16 +522,22 @@ function parseArguments() {
         return false;
     }
   }
-  if (Data.username.length === 0 || Data.password.length === 0) {
-    Data.username = process.env.USERNAME;
+  if (!Data.username || !Data.password.length) {
+    Data.username = process.env.EMAIL;
     Data.password = process.env.PASSWORD;
   }
-  if (Data.username.length === 0 || Data.password.length === 0) {
+  if (!Data.username || !Data.password) {
     console.log("Required parameters missing. Please update the .env file or use the following parameters: -u username and -p password.");
+    return false;
+  }
+  if (Data.message && !Data.recipientId || !Data.message && Data.recipientId) {
+    console.log("Missing parameter for sending message. Both -m message and -r recipientId must be provided.");
     return false;
   }
   console.log("username:", Data.username);
   console.log("password:", Data.password);
+  console.log("message:", Data.message);
+  console.log("recipient:", Data.recipientId);
   console.log("doRefetchLoginPage:", Config.doRefetchLoginPage);
   console.log("doRefetchLoginResponse:", Config.doRefetchLoginResponse);
   console.log("doRefetchHomePage:", Config.doRefetchHomePage);
