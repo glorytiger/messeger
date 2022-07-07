@@ -27,15 +27,26 @@ async function run() {
 
   if (!Store.initUserVars()) return;
 
-  if (!await LoginPage.init(Store)) return;
+  if (!await LoginPage.init(Store))
+    if (!await LoginPage.run(Store))
+      return;
   
-  if (!await LoginResponse.init(Store)) return;
+  if (!await LoginResponse.init(Store))
+    if (!await LoginResponse.run(Store))
+      return;
 
-  if (!await HomePage.init(Store)) return; 
+  if (!await HomePage.init(Store))
+      if (!await HomePage.run(Store))
+        return; 
 
-  if (!await RsrcScripts.init(Store)) return;
+  if (!await RsrcScripts.init(Store))
+    if (!await RsrcScripts.run(Store))
+      return;
   
-  if (!await InboxScript.run(Store)) return;
+  if (!await InboxScript.run(Store))
+    if (!await InboxScript.run(Store))
+      return;
+  
   return;
 
 

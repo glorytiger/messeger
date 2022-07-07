@@ -34,6 +34,9 @@ class Util {
         console.error("Unable to write cache file "+path+"\n", err);
       }
     });
+
+    // TODO: make this return false on error
+    return true;
   }
 
   static timeConverter(timestamp) {

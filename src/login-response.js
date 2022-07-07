@@ -73,6 +73,8 @@ class LoginResponse {
         }
         return err.response;
       });
+      console.log("response:", response.status);
+      console.log("data length:", response.headers.length);
     } while ((!response || !response.headers) && numTries < maxTries);
     if (!response.headers) return false;
     

@@ -35,7 +35,7 @@ class InboxScript {
   }
 
   static async makeRequest(Store) {
-    console.log("InboxScript.makeRequest()");
+    console.log("\nInboxScript.makeRequest()");
     let inboxScript = '';
 
     const options = {
