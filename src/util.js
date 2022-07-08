@@ -4,26 +4,27 @@ const fs = require('fs');
 
 class Util {
 
-  static async readFile(name, Store) {
+  static async readFile(name, Store, outData) {
     const path = `${Store.config.cache.path}\\${name}`;
-    let data = {
-      fetchTime: null,
-      content: null
-    };
+    let fetchTime = null;
+    let content = null;
 
     try {
       const res = JSON.parse(await fs.readFileSync(path, 'utf8'));
-      data.fetchTime = parseInt(res.fetchTime);
-      data.content = res.content;
-      if (!Number.isInteger(data.fetchTime)) {
+      fetchTime = parseInt(res.fetchTime);
+      content = res.content;
+      if (!Number.isInteger(fetchTime)) {
         throw("Expected UNIX timestamp on the first line of the file");
       }
     } catch (err) {
       console.error("Unable to read cache file "+path+"\n", err);
-      return null;
+      return false;
     }
     
-    return data;
+    outData.fetchTime = fetchTime;
+    outData.content = content;
+    
+    return true;
   }
 
   static writeFile(name, data, Store) {

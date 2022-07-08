@@ -1,9 +1,11 @@
 // src\home-page.js
 
 const Util = require('./util.js');
-
 const axios = require('axios');
 
+// Retrieves the home page from cahe or web
+// Requires cookies c_user and xs
+// Provides params fb_dtsg, deviceId and rsrc script urls
 class HomePage {
 
   static data = {
@@ -13,13 +15,8 @@ class HomePage {
   
   static async init(Store) {
     console.log("\nHomePage.init()");
-    let res = null;
-
-    res = await Util.readFile(Store.config.cache.homePage, Store);
-    if (!res) return false;
-    this.data = res;
-
     return (
+      await Util.readFile(Store.config.cache.homePage, Store, this.data) &&
       this.extractParams(Store) &&
       this.extractRsrcScriptUrls(Store)
     );

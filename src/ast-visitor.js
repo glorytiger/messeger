@@ -1,11 +1,16 @@
 // src\ast-visitor.js
 
+// Tailored syntax tree walker for Acorn.
+// Creates a list of Nodes denoting so-called LS functions.
 class Visitor {
+
   constructor() {
     this.count = 0;
     this.lsFuncsRaw = [];
   }
+
   visitNodes(nodes) { for (const n of nodes) this.visitNode(n); }
+  
   visitNode(node) {
     if (node === null || node === undefined) return;
     this.count++;

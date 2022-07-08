@@ -1,9 +1,11 @@
 // src\rsrc-scripts.js
 
 const Util = require('./util.js');
-
 const axios = require('axios');
 
+// Retrieves rsrc scripts from cache or web
+// Requires the script urls
+// Extracts params version and doc_id
 class RsrcScripts {
 
   static data = {
@@ -13,13 +15,10 @@ class RsrcScripts {
 
   static async init(Store) {
     console.log("\nRsrcScripts.init()");
-    let res = null;
-
-    res = await Util.readFile(Store.config.cache.rsrcScripts, Store);
-    if (!res) return false;
-    this.data = res;
-
-    return this.extractParams(Store);
+    return (
+      await Util.readFile(Store.config.cache.rsrcScripts, Store, this.data) &&
+      this.extractParams(Store)
+    );
   }
 
   static async run(Store) {

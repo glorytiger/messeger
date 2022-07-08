@@ -1,9 +1,10 @@
 // src\loginPage.js
 
 const Util = require('./util.js');
-
 const axios = require('axios');
 
+// Retrieves the login page from cache or web
+// Extracts params initial_request_id, lsd and datr
 class LoginPage {
   
   static data = {
@@ -13,31 +14,18 @@ class LoginPage {
   
   static async init(Store) {
     console.log("\nLoginPage.init()");
-    let res = null;
-
-    res = await Util.readFile(Store.config.cache.loginPage, Store);
-    if (!res) return false;
-    this.data = res;
-
-    res = this.extractParams(Store);
-    if (!res) return false;
-
-    return true;
+    return (
+      await Util.readFile(Store.config.cache.loginPage, Store, this.data) &&
+      this.extractParams(Store)
+    );
   }
 
   static async run(Store) {
-    let res = false;
-    
-    res = await this.makeRequest(Store);
-    if (!res) return false;
-
-    res = await this.extractParams(Store);
-    if (!res) return false;
-
-    res = await Util.writeFile(Store.config.cache.loginPage, JSON.stringify(this.data), Store);
-    if (!res) return false;
-
-    return true;
+    return (
+      await this.makeRequest(Store) &&
+      await this.extractParams(Store) &&
+      await Util.writeFile(Store.config.cache.loginPage, JSON.stringify(this.data), Store)
+    );
   }
 
   static async makeRequest(Store) {
@@ -68,17 +56,20 @@ class LoginPage {
   static extractParams(Store) {
     let pattern = /name="initial_request_id" value="(?<id>\w+)"/;
     let result = this.data.content.match(pattern).groups;
-    Store.params.initialRequestId = result.id;
+    Store.params.initial_request_id = result.id;
+    console.log("initialRequestId:", Store.params.initial_request_id);
 
     pattern = /name="lsd" value="(?<lsd>\w+)/;
     result = this.data.content.match(pattern).groups;
     Store.params.lsd = result.lsd;
+    console.log("lsd:", Store.params.lsd);
 
     pattern = /"_js_datr","(?<datr>[^"]+)"/;
     result = this.data.content.match(pattern).groups;
-    Store.params.datr = result.datr;
+    Store.cookies.datr = result.datr;
+    console.log("datr:", Store.cookies.datr);
 
-    return (Store.params.initialRequestId && Store.params.lsd && Store.params.datr);
+    return (Store.params.initial_request_id && Store.params.lsd && Store.cookies.datr);
   }
 }
 

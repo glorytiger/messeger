@@ -7,6 +7,8 @@ const axios = require('axios');
 const acorn = require('acorn');
 const bigInt = require('big-integer');
 
+// Gets inbox conversation data from cache or web
+// Requires cookies c_user, xs, params fb_dtsg, doc_id, deviceId and version
 class InboxScript {
   
   static data = {
@@ -17,13 +19,10 @@ class InboxScript {
 
   static async init(Store) {
     console.log("\nInboxScript.init()");
-    let res = null;
-
-    res = await Util.readFile(Store.config.cache.inboxScript, Store);
-    if (!res) return false;
-    this.data = res;
-
-    return this.extractConversations(Store);
+      return (
+        await Util.readFile(Store.config.cache.inboxScript, Store, this.data) &&
+        this.extractConversations(Store)
+      );
   }
 
   static async run(Store) {

@@ -5,6 +5,9 @@ const Util = require('./util.js');
 const axios = require('axios');
 const qs = require('qs');
 
+// Retrieves a login response from cache or web
+// Requires params initial_request_id, lsd, email, pass and cookie datr
+// Extracts cookies c_user and xs
 class LoginResponse {
 
   static data = {
@@ -14,38 +17,25 @@ class LoginResponse {
 
   static async init(Store) {
     console.log("\nLoginResponse.init()");
-    let res = null;
-
-    res = await Util.readFile(Store.config.cache.loginResponse, Store);
-    if (!res) return false;
-    this.data = res;
-
-    res = this.extractCookies(Store);
-    if (!res) return false;
-
-    return true;
+    return (
+      await Util.readFile(Store.config.cache.loginResponse, Store, this.data) &&
+      this.extractCookies(Store)
+    );
   }
 
   static async run(Store) {
-    let res = false;
-    
-    res = await this.makeRequest(Store);
-    if (!res) return false;
-
-    res = await this.extractCookies(Store);
-    if (!res) return false;
-
-    res = await Util.writeFile(Store.config.cache.loginResponse, JSON.stringify(this.data), Store);
-    if (!res) return false;
-
-    return true;
+    return ( 
+      await this.makeRequest(Store) &&
+      this.extractCookies(Store) &&
+      await Util.writeFile(Store.config.cache.loginResponse, JSON.stringify(this.data), Store)
+    );
   }
 
   static async makeRequest(Store) {
     console.log("\nLoginResponse.makeRequest()");
     const maxTries = 3;
     const body = qs.stringify({
-      'initial_request_id': Store.params.initialRequestId,
+      'initial_request_id': Store.params.initial_request_id,
       'lsd': Store.params.lsd,
       'email': Store.user.email,
       'pass': Store.user.password
@@ -55,7 +45,7 @@ class LoginResponse {
       url: Store.config.host+Store.config.loginPath,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Cookie': `datr=${Store.params.datr}`
+        'Cookie': `datr=${Store.cookies.datr}`
       },
       data: body,
       maxRedirects: 0
@@ -85,12 +75,12 @@ class LoginResponse {
   }
 
   static extractCookies(Store) {
-    
     let regexp = /c_user=([^;]+)/;
     Store.cookies.c_user = this.data.content['set-cookie'][0].match(regexp)[1];
+    console.log("c_user:", Store.cookies.c_user);
+    
     regexp = /xs=([^;]+)/;
     Store.cookies.xs = this.data.content['set-cookie'][1].match(regexp)[1];
-    console.log("c_user:", Store.cookies.c_user);
     console.log("xs:", Store.cookies.xs);
 
     return (Store.cookies.c_user && Store.cookies.xs);

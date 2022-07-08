@@ -29,24 +29,25 @@ class Store {
   };
 
   static params = {
-    initialRequestId: null,
-    lsd: null,
-    datr: null,
-    fb_dtsg: null,
-    deviceId: null,
-    version: null,
+    initial_request_id: null, //login
+    lsd: null, //login
+    fb_dtsg: null, //conversations
+    deviceId: null, //conversations
+    version: null, //conversations
+    doc_id: null //conversations
   };
 
   static cookies = {
-    c_user: null,
-    xs: null
+    datr: null, //login
+    c_user: null, //session
+    xs: null //session
   };
   static rsrcScriptUrls = [];
   static conversations = [];
 
   static initUserVars() {
     
-    this.readEnvironmentVars();
+    this.readEnvFileVars();
     
     if (!this.parseCommandLineArgs()) return false;
 
@@ -76,7 +77,7 @@ class Store {
     return true;
   };
 
-  static readEnvironmentVars() {
+  static readEnvFileVars() {
     this.user.email = process.env.EMAIL;
     this.user.password = process.env.PASSWORD;
   };

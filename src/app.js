@@ -21,27 +21,33 @@ function printMenu() {
   // print 'press n to exit'
 }
 
+// *** How conversation data is fetched ***
+// InboxScript.run() gets conversation data from web
+// The function requires session cookies from LoginResponse and params from RsrcScripts and HomePage
+// RsrcScripts requires script urls from HomePage
+// HomePage requires session cookies from LoginResponse
+// LoginResponse requires cookie and params from LoginPage
 async function run() {
 
   if (!Store.initUserVars()) return;
 
-  if (!await LoginPage.init(Store))
+  if (Store.user.refetchLoginPage || !await LoginPage.init(Store))
     if (!await LoginPage.run(Store))
       return;
   
-  if (!await LoginResponse.init(Store))
+  if (Store.user.refetchLoginResponse || !await LoginResponse.init(Store))
     if (!await LoginResponse.run(Store))
       return;
 
-  if (!await HomePage.init(Store))
-      if (!await HomePage.run(Store))
-        return; 
+  if (Store.user.refetchHomePage || !await HomePage.init(Store))
+    if (!await HomePage.run(Store))
+      return; 
 
-  if (!await RsrcScripts.init(Store))
+  if (Store.user.refetchRsrcScripts || !await RsrcScripts.init(Store))
     if (!await RsrcScripts.run(Store))
       return;
   
-  if (!await InboxScript.run(Store))
+  if (Store.user.refetchInboxScript || !await InboxScript.run(Store))
     if (!await InboxScript.run(Store))
       return;
   
