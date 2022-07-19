@@ -1,9 +1,9 @@
 // src\loginResponse.js
 
-const Util = require('./util.js');
+import Util from './util.js';
 
-const axios = require('axios');
-const qs = require('qs');
+import * as axios from 'axios';
+import * as qs from 'qs';
 
 // Retrieves a login response from cache or web
 // Requires params initial_request_id, lsd, email, pass and cookie datr
@@ -87,5 +87,5 @@ class LoginResponse {
   }
 }
 
-module.exports = LoginResponse;
+export default LoginResponse;
 

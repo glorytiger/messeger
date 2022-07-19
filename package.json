@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Run:\r ---\r node messyger.js <username> <password>",
   "main": "messyger.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -14,6 +15,8 @@
     "axios": "^0.27.2",
     "big-integer": "^1.6.51",
     "dotenv": "^16.0.1",
-    "qs": "^6.10.5"
+    "isomorphic-ws": "^5.0.0",
+    "qs": "^6.10.5",
+    "ws": "^8.8.0"
   }
 }

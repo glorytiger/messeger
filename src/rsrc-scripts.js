@@ -1,7 +1,7 @@
 // src\rsrc-scripts.js
 
-const Util = require('./util.js');
-const axios = require('axios');
+import Util from './util.js';
+import * as  axios from 'axios';
 
 // Retrieves rsrc scripts from cache or web
 // Requires the script urls
@@ -71,5 +71,5 @@ class RsrcScripts {
   }
 }
 
-module.exports = RsrcScripts;
+export default RsrcScripts;
 

@@ -1,7 +1,7 @@
 // src\home-page.js
 
-const Util = require('./util.js');
-const axios = require('axios');
+import Util from './util.js';
+import * as axios from 'axios';
 
 // Retrieves the home page from cahe or web
 // Requires cookies c_user and xs
@@ -90,5 +90,5 @@ class HomePage {
   }
 }
 
-module.exports = HomePage;
+export default HomePage;
 

@@ -55,5 +55,5 @@ class Visitor {
   }
 }
 
-module.exports = Visitor;
+export default Visitor;
 

@@ -1,7 +1,7 @@
 // src\loginPage.js
 
-const Util = require('./util.js');
-const axios = require('axios');
+import Util from './util.js';
+import * as axios from 'axios' ;
 
 // Retrieves the login page from cache or web
 // Extracts params initial_request_id, lsd and datr
@@ -73,5 +73,5 @@ class LoginPage {
   }
 }
 
-module.exports = LoginPage;
+export default LoginPage;
 

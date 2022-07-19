@@ -1,18 +1,19 @@
 // src\app.js
 
-require('dotenv').config({ path: '../.env' });
-const axios = require('axios');
-const fs = require('fs');
-const qs = require('qs');
-const acorn = require('acorn');
-const bigInt = require('big-integer');
+import fs from 'fs';
+import qs from 'qs';
+import * as acorn from 'acorn';
+import bigInt from 'big-integer';
 
-const Store = require('./store.js');
-const LoginPage = require('./login-page.js');
-const LoginResponse = require('./login-response.js');
-const HomePage = require('./home-page.js');
-const RsrcScripts = require('./rsrc-scripts.js');
-const InboxScript = require('./inbox-script.js');
+import Store from './store.js';
+import LoginPage from './login-page.js';
+import LoginResponse from './login-response.js';
+import HomePage from './home-page.js';
+import RsrcScripts from './rsrc-scripts.js';
+import InboxScript from './inbox-script.js';
+import ThreadScript from './thread-script.js';
+import WebSocket from './web-socket.js';
+  
 
 function printMenu() {
   console.log("Messeger");
@@ -47,10 +48,15 @@ async function run() {
     if (!await RsrcScripts.run(Store))
       return;
   
-  if (Store.user.refetchInboxScript || !await InboxScript.run(Store))
+  if (Store.user.refetchInboxScript || !await InboxScript.init(Store))
     if (!await InboxScript.run(Store))
       return;
-  
+
+  //ThreadScript.makeRequest(Store);
+  //ThreadScript.getUrls(Store);
+
+  WebSocket.run(Store);
+
   if (Store.user.message && Store.user.recipientId) {
     await sendMessage();
   }
@@ -65,7 +71,9 @@ async function sendMessage() {
   console.log("\nsendMessage()");
   const timestamp = Date.now();
   const epoch = timestamp << 22;
-  const otid = epoch + 0; // TODO replace with randomInt(0, 2**22)
+  //const otid = epoch + 0; // TODO replace with randomInt(0, 2**22)
+  const otid = epoch + Math.floor(Math.random() * 4194304);
+  console.log("timestamp:", timestamp);
   console.log("timestamp:", timestamp);
   console.log("epoch:", epoch);
   console.log("otid:", otid);  
@@ -83,7 +91,7 @@ async function sendMessage() {
             'otid': otid.toString(), // was '6945771336828502081'
             'source': 0, // was 65541
             'send_type': 1,
-            'text': 'send message test',
+            'text': Store.user.message,
             'initiating_source': 1
           }),
           'queue_name': Store.user.recipientId.toString(), // was '612305952',
@@ -107,7 +115,7 @@ async function sendMessage() {
     }),
     'requestType': 3 // to match type: 3 in websocket message
   });
-
+  console.log(Store.user.message);
   const options = {
     method: 'post',
     url: Store.config.host + Store.config.apiPath,

@@ -1,6 +1,6 @@
 // src\util.js
 
-const fs = require('fs');
+import * as fs from 'fs';
 
 class Util {
 
@@ -56,5 +56,5 @@ class Util {
   }
 }
 
-module.exports = Util;
+export default Util;
 

@@ -1,11 +1,11 @@
 // src\inbox-script.js
 
-const Util = require('./util.js');
-const Visitor = require('./ast-visitor.js');
+import Util from './util.js';
+import Visitor from './ast-visitor.js';
 
-const axios = require('axios');
-const acorn = require('acorn');
-const bigInt = require('big-integer');
+import * as axios from 'axios';
+import * as acorn from 'acorn' ;
+import bigInt from 'big-integer';
 
 // Gets inbox conversation data from cache or web
 // Requires cookies c_user, xs, params fb_dtsg, doc_id, deviceId and version
@@ -37,6 +37,20 @@ class InboxScript {
     console.log("\nInboxScript.makeRequest()");
     let inboxScript = '';
 
+    const variables = JSON.stringify({
+      'deviceId': Store.params.deviceId,
+      'requestId': 0,
+      'requestPayload': JSON.stringify({
+        'database': 1,
+        'version': Store.params.version,
+        'sync_params': JSON.stringify({
+          'locale': 'en_GB'
+        }),
+        'last_applied_cursor': null
+      }),
+      'requestType': 1
+    });
+
     const options = {
       method: 'post',
       url: Store.config.host + Store.config.apiPath,
@@ -46,7 +60,8 @@ class InboxScript {
         'content-type': 'application/x-www-form-urlencoded',
         'cookie': `c_user=${Store.cookies.c_user}; xs=${Store.cookies.xs}`
       },
-      data: `fb_dtsg=${Store.params.fb_dtsg}&doc_id=${Store.params.doc_id}&variables=%7B%22deviceId%22%3A%22${Store.params.deviceId}%22%2C%22requestId%22%3A0%2C%22requestPayload%22%3A%22%7B%5C%22database%5C%22%3A1%2C%5C%22version%5C%22%3A${Store.params.version}%2C%5C%22sync_params%5C%22%3A%5C%22%7B%5C%5C%5C%22locale%5C%5C%5C%22%3A%5C%5C%5C%22en_GB%5C%5C%5C%22%7D%5C%22%2C%5C%22last_applied_cursor%5C%22%3Anull%7D%22%2C%22requestType%22%3A1%7D`
+      data: `fb_dtsg=${Store.params.fb_dtsg}&doc_id=${Store.params.doc_id}&variables=${variables}`
+      //data: `fb_dtsg=${Store.params.fb_dtsg}&doc_id=${Store.params.doc_id}&variables=%7B%22deviceId%22%3A%22${Store.params.deviceId}%22%2C%22requestId%22%3A0%2C%22requestPayload%22%3A%22%7B%5C%22database%5C%22%3A1%2C%5C%22version%5C%22%3A${Store.params.version}%2C%5C%22sync_params%5C%22%3A%5C%22%7B%5C%5C%5C%22locale%5C%5C%5C%22%3A%5C%5C%5C%22en_GB%5C%5C%5C%22%7D%5C%22%2C%5C%22last_applied_cursor%5C%22%3Anull%7D%22%2C%22requestType%22%3A1%7D`
     };
 
     const response = await axios(options)
@@ -58,7 +73,7 @@ class InboxScript {
       console.error("Unexpected response.\n", response);
       return false;
     }
-    
+
     inboxScript = response.data["data"]["viewer"]["lightspeed_web_request"]["payload"];
     if (inboxScript.length === 0){
       console.log("Recieved empty inbox script. Unable to continue");
@@ -124,6 +139,9 @@ class InboxScript {
           withUserId: userId, withUserName: userName, isUnread: lastSentTs.neq(lastReadTs), lastMessage: lastMsg, lastMessageUserId: lastMsgUserId, lastMessageUserName: lastMsgUserName
         });
       }
+      else if (value[0] === 'upsertMessage') {
+        //console.log(value);
+      }
     }
 
     // Add user name to Conversations
@@ -143,8 +161,9 @@ class InboxScript {
     }
   
     console.log(Store.conversations);
+    return true;
   }
 }
 
-module.exports = InboxScript;
+export default InboxScript;
 

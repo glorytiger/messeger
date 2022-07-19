@@ -1,5 +1,9 @@
 // src\store.js
 
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
+import * as bigInt from 'big-integer';
+
 class Store {
   
   static user = {
@@ -132,5 +136,5 @@ class Store {
   }
 };
 
-module.exports = Store;
+export default Store;
 
