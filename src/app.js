@@ -12,7 +12,7 @@ import HomePage from './home-page.js';
 import RsrcScripts from './rsrc-scripts.js';
 import InboxScript from './inbox-script.js';
 import ThreadScript from './thread-script.js';
-import WebSocket from './web-socket.js';
+import WS from './web-socket.js';
   
 
 function printMenu() {
@@ -55,7 +55,7 @@ async function run() {
   //ThreadScript.makeRequest(Store);
   //ThreadScript.getUrls(Store);
 
-  WebSocket.run(Store);
+  WS.run(Store);
 
   if (Store.user.message && Store.user.recipientId) {
     await sendMessage();
