@@ -3,7 +3,7 @@
 import Util from './util.js';
 import Visitor from './ast-visitor.js';
 
-import * as axios from 'axios';
+import axios from 'axios';
 import * as acorn from 'acorn' ;
 import bigInt from 'big-integer';
 

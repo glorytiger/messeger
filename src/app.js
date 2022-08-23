@@ -55,7 +55,7 @@ async function run() {
   //ThreadScript.makeRequest(Store);
   //ThreadScript.getUrls(Store);
 
-  WS.run(Store);
+  //WS.run(Store);
 
   if (Store.user.message && Store.user.recipientId) {
     await sendMessage();

@@ -1,7 +1,7 @@
 // src\home-page.js
 
 import Util from './util.js';
-import * as axios from 'axios';
+import axios from 'axios';
 
 // Retrieves the home page from cahe or web
 // Requires cookies c_user and xs
@@ -63,6 +63,7 @@ class HomePage {
     Store.params.fb_dtsg = this.data.content.match(pattern)[2];
     console.log("fb_dtsg:", Store.params.fb_dtsg);
     
+    //console.log(this.data.content);
     pattern = /clientID":"([^"]+)/;
     Store.params.deviceId = this.data.content.match(pattern)[1];
     console.log("deviceId:", Store.params.deviceId);
@@ -85,7 +86,7 @@ class HomePage {
 
     Store.rsrcScriptUrls = urls;
     console.log("rsrc script urls:", Store.rsrcScriptUrls.length);
-
+    
     return true;
   }
 }

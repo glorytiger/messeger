@@ -2,7 +2,7 @@
 
 import Util from './util.js';
 
-import * as axios from 'axios';
+import axios from 'axios';
 import * as qs from 'qs';
 
 // Retrieves a login response from cache or web
@@ -64,7 +64,6 @@ class LoginResponse {
         return err.response;
       });
       console.log("response:", response.status);
-      console.log("data length:", response.headers.length);
     } while ((!response || !response.headers) && numTries < maxTries);
     if (!response.headers) return false;
     

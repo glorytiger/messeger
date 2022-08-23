@@ -1,7 +1,7 @@
 // src\rsrc-scripts.js
 
 import Util from './util.js';
-import * as  axios from 'axios';
+import axios from 'axios';
 
 // Retrieves rsrc scripts from cache or web
 // Requires the script urls
@@ -59,7 +59,12 @@ class RsrcScripts {
   }
 
   static extractParams(Store) {
+    Util.writeFile("test.txt", this.data.content, Store);
     let pattern = /"LSVersion"[^}"]+"([\d]+)/;
+    //let pattern = /LSVersion/;
+    //console.log(this.data.content.length);
+    //let result = this.data.content.match(pattern);
+    //console.log("result:", result);
     Store.params.version = this.data.content.match(pattern)[1];
     console.log("version:", Store.params.version);
 

@@ -1,7 +1,7 @@
 // src\loginPage.js
 
 import Util from './util.js';
-import * as axios from 'axios' ;
+import axios from 'axios' ;
 
 // Retrieves the login page from cache or web
 // Extracts params initial_request_id, lsd and datr
@@ -55,6 +55,10 @@ class LoginPage {
 
   static extractParams(Store) {
     let pattern = /name="initial_request_id" value="(?<id>\w+)"/;
+    if (this.data.content.length === 0) {
+      console.log("data.content:", this.data.content);
+    }
+    // TODO: this sometimes fails for unknown reasons
     let result = this.data.content.match(pattern).groups;
     Store.params.initial_request_id = result.id;
     console.log("initialRequestId:", Store.params.initial_request_id);
